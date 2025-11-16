@@ -16,34 +16,16 @@ class _HomePageState extends State<HomePage> {
   LatLng? _center;
   bool _loading = false;
 
-  // mantenha user marker separado para não removê-lo ao atualizar
   Marker? _userMarker;
-  final List<Marker> _otherMarkers = [];
+  final List<Marker> _markers = [];
 
   @override
   void initState() {
     super.initState();
-    _getUserLocation();
+    _getLocation();
   }
 
-  Future<void> _getUserLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('O serviço de localização está desativado')),
-        );
-      }
-      return;
-    }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
-    }
-    if (permission == LocationPermission.deniedForever) return;
-
+  Future<void> _getLocation() async {
     final pos = await Geolocator.getCurrentPosition();
 
     setState(() {
@@ -52,64 +34,93 @@ class _HomePageState extends State<HomePage> {
         width: 50,
         height: 50,
         point: _center!,
-        child: const Icon(Icons.my_location, size: 30, color: Colors.blue),
+        child: const Icon(Icons.my_location, color: Colors.blue, size: 30),
       );
     });
   }
 
-  Future<void> _buscarLocais() async {
+  Future<void> _buscarTodos() async {
     setState(() => _loading = true);
 
     try {
-      final results = await ApiService.getAllPoints();
+      final list = await ApiService.getAllPoints();
+      _markers.clear();
 
-      _otherMarkers.clear();
-
-      for (var p in results) {
-        final name = p["name"] ?? "Sem nome";
+      for (var p in list) {
         final lat = double.tryParse(p["latitude"].toString());
         final lng = double.tryParse(p["longitude"].toString());
-
         if (lat == null || lng == null) continue;
 
-        _otherMarkers.add(
+        _markers.add(
           Marker(
-            width: 80,
-            height: 80,
+            width: 60,
+            height: 60,
             point: LatLng(lat, lng),
             child: Tooltip(
-              message: name,
-              child: const Icon(
-                Icons.location_on,
-                size: 32,
-                color: Colors.green,
-              ),
+              message: p["name"],
+              child: const Icon(Icons.location_on, color: Colors.green, size: 35),
             ),
           ),
         );
+      }
+
+      setState(() {});
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Erro: $e")));
     }
 
-    setState(() {});
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Erro ao carregar pontos: $e")),
-    );
+    setState(() => _loading = false);
   }
 
-  setState(() => _loading = false);
-}
+  Future<void> _buscarProximos() async {
+    if (_center == null) return;
 
+    setState(() => _loading = true);
+
+    try {
+      final list = await ApiService.getNearbyPoints(
+        _center!.latitude,
+        _center!.longitude,
+      );
+
+      _markers.clear();
+
+      for (var p in list) {
+        final lat = p["lat"] is num ? p["lat"].toDouble() : double.tryParse(p["lat"].toString());
+        final lng = p["lng"] is num ? p["lng"].toDouble() : double.tryParse(p["lng"].toString());
+        if (lat == null || lng == null) continue;
+
+        _markers.add(
+          Marker(
+            width: 60,
+            height: 60,
+            point: LatLng(lat, lng),
+            child: Tooltip(
+              message: p["name"],
+              child: const Icon(Icons.place, color: Colors.orange, size: 35),
+            ),
+          ),
+        );
+      }
+
+      setState(() {});
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Erro: $e")));
+    }
+
+    setState(() => _loading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final allMarkers = <Marker>[];
-    if (_userMarker != null) allMarkers.add(_userMarker!);
-    allMarkers.addAll(_otherMarkers);
+    final markers = <Marker>[];
+    if (_userMarker != null) markers.add(_userMarker!);
+    markers.addAll(_markers);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("EcoLink - Mapa"),
-      ),
+      appBar: AppBar(title: const Text("EcoLink — Mapa")),
       body: _center == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -124,40 +135,42 @@ class _HomePageState extends State<HomePage> {
                       TileLayer(
                         urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                       ),
-                      MarkerLayer(markers: allMarkers),
+                      MarkerLayer(markers: markers),
                     ],
                   ),
                 ),
+
+                // Botões
                 Padding(
                   padding: const EdgeInsets.all(12),
-                  child: ElevatedButton.icon(
-                    onPressed: _loading ? null : _buscarLocais,
-                    icon: const Icon(Icons.search),
-                    label: const Text("Buscar Locais Próximos"),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Column(
                     children: [
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(context, "/points-list");
-                        },
+                        onPressed: _loading ? null : _buscarProximos,
+                        icon: const Icon(Icons.location_searching),
+                        label: const Text("Buscar Locais Próximos (Google + Banco)"),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        onPressed: _loading ? null : _buscarTodos,
                         icon: const Icon(Icons.list),
+                        label: const Text("Listar Todos os Pontos"),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        onPressed: () => Navigator.pushNamed(context, "/points-list"),
+                        icon: const Icon(Icons.map),
                         label: const Text("Ver Pontos Registrados"),
                       ),
                       const SizedBox(height: 10),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(context, "/create-point");
-                        },
+                        onPressed: () => Navigator.pushNamed(context, "/create-point"),
                         icon: const Icon(Icons.add_location_alt),
                         label: const Text("Cadastrar Novo Ponto"),
                       ),
                     ],
                   ),
-                ),
+                )
               ],
             ),
     );

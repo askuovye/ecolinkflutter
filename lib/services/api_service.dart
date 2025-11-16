@@ -2,57 +2,27 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-
   static const String baseUrl = "http://127.0.0.1:8000/api";
 
-  static Future<List<dynamic>> getNearbyPoints(double lat, double lng) async {
-    final uri = Uri.parse("$baseUrl/nearby?lat=$lat&lng=$lng");
-
-    final response = await http.get(
-      uri,
-      headers: {"Accept": "application/json"},
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception("Erro ao buscar locais: ${response.statusCode} ${response.body}");
-    }
-
-    final decoded = jsonDecode(response.body);
-
-    if (decoded is List) return decoded;
-
-    if (decoded is Map && decoded["results"] is List) {
-      return decoded["results"];
-    }
-
-    for (final entry in (decoded as Map).entries) {
-      if (entry.value is List) return entry.value;
-    }
-
-    return [];
-  }
-
+  /// GET /api/points — lista todos os pontos
   static Future<List<dynamic>> getAllPoints() async {
     final uri = Uri.parse("$baseUrl/points");
+    final res = await http.get(uri);
 
-    final response = await http.get(
-      uri,
-      headers: {"Accept": "application/json"},
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception("Erro ao buscar pontos: ${response.statusCode}");
-    }
-
-    final decoded = jsonDecode(response.body);
-
-    if (decoded is List) return decoded;
-
-    if (decoded is Map && decoded["data"] is List) return decoded["data"];
-
-    return [];
+    if (res.statusCode != 200) return [];
+    return jsonDecode(res.body);
   }
 
+  /// GET /api/nearby — buscar pontos próximos (Google Places + salva no banco)
+  static Future<List<dynamic>> getNearbyPoints(double lat, double lng) async {
+    final uri = Uri.parse("$baseUrl/nearby?lat=$lat&lng=$lng");
+    final res = await http.get(uri);
+
+    if (res.statusCode != 200) return [];
+    return jsonDecode(res.body);
+  }
+
+  /// POST /api/points — cria um ponto
   static Future<String> createPoint({
     required String name,
     required String address,
@@ -61,24 +31,25 @@ class ApiService {
   }) async {
     final uri = Uri.parse("$baseUrl/points");
 
-    final response = await http.post(
+    final res = await http.post(
       uri,
-      headers: {"Accept": "application/json"},
-      body: {
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
         "name": name,
         "address": address,
-        "latitude": lat.toString(),
-        "longitude": lng.toString(),
-      },
+        "latitude": lat,
+        "longitude": lng,
+      }),
     );
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      return "Erro ao salvar ponto: ${response.body}";
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      return "Ponto criado com sucesso!";
     }
 
-    return "Ponto cadastrado com sucesso!";
+    return "Erro: ${res.body}";
   }
 
+  /// PUT /api/points/{id}
   static Future<String> updatePoint({
     required int id,
     required String name,
@@ -86,34 +57,23 @@ class ApiService {
   }) async {
     final uri = Uri.parse("$baseUrl/points/$id");
 
-    final response = await http.put(
+    final res = await http.put(
       uri,
-      headers: {"Accept": "application/json"},
-      body: {
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
         "name": name,
         "address": address,
-      },
+      }),
     );
 
-    if (response.statusCode == 200) {
-      return "Ponto atualizado!";
-    }
-
-    return "Erro ao atualizar: ${response.body}";
+    return res.statusCode == 200 ? "Ponto atualizado!" : "Erro: ${res.body}";
   }
 
+  /// DELETE /api/points/{id}
   static Future<String> deletePoint(int id) async {
     final uri = Uri.parse("$baseUrl/points/$id");
+    final res = await http.delete(uri);
 
-    final response = await http.delete(
-      uri,
-      headers: {"Accept": "application/json"},
-    );
-
-    if (response.statusCode == 200) {
-      return "Ponto deletado!";
-    }
-
-    return "Erro ao deletar ponto: ${response.body}";
+    return res.statusCode == 200 ? "Ponto deletado!" : "Erro: ${res.body}";
   }
 }

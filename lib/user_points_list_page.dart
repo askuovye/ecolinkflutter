@@ -15,10 +15,10 @@ class _UserPointsListPageState extends State<UserPointsListPage> {
   @override
   void initState() {
     super.initState();
-    _loadPoints();
+    _load();
   }
 
-  Future<void> _loadPoints() async {
+  Future<void> _load() async {
     final list = await ApiService.getAllPoints();
     setState(() {
       points = list;
@@ -30,7 +30,6 @@ class _UserPointsListPageState extends State<UserPointsListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Pontos Registrados")),
-
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
@@ -38,16 +37,13 @@ class _UserPointsListPageState extends State<UserPointsListPage> {
               itemBuilder: (context, i) {
                 final p = points[i];
                 return ListTile(
-                  title: Text(p["name"] ?? "Sem nome"),
-                  subtitle: Text(p["address"] ?? "-"),
+                  title: Text(p["name"]),
+                  subtitle: Text(p["address"] ?? ""),
                   trailing: IconButton(
                     icon: const Icon(Icons.edit),
                     onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        "/edit-point",
-                        arguments: p,
-                      ).then((_) => _loadPoints());
+                      Navigator.pushNamed(context, "/edit-point", arguments: p)
+                          .then((_) => _load());
                     },
                   ),
                 );

@@ -11,38 +11,50 @@ class EditPointPage extends StatefulWidget {
 class _EditPointPageState extends State<EditPointPage> {
   final nameCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
-
-  late int pointId;
+  int? pointId;
+  bool saving = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final data = ModalRoute.of(context)!.settings.arguments as Map;
-
-    pointId = data["id"];
-    nameCtrl.text = data["name"] ?? "";
-    addressCtrl.text = data["address"] ?? "";
+    final args = ModalRoute.of(context)!.settings.arguments;
+    if (args != null && args is Map<String, dynamic>) {
+      final data = args;
+      final idVal = data['id'];
+      pointId = idVal is int ? idVal : int.tryParse(idVal.toString());
+      nameCtrl.text = data['name'] ?? '';
+      addressCtrl.text = data['address'] ?? '';
+    }
   }
 
   Future<void> _save() async {
-    final resp = await ApiService.updatePoint(
-      id: pointId,
-      name: nameCtrl.text,
-      address: addressCtrl.text,
-    );
+    if (pointId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("ID do ponto inválido")));
+      return;
+    }
+    setState(() => saving = true);
+    try {
+      final resp = await ApiService.updatePoint(id: pointId!, name: nameCtrl.text, address: addressCtrl.text);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(resp)));
+      Navigator.pop(context, true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erro: $e")));
+    } finally {
+      setState(() => saving = false);
+    }
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(resp)),
-    );
-
-    Navigator.pop(context);
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    addressCtrl.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Editar Ponto")),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -52,9 +64,9 @@ class _EditPointPageState extends State<EditPointPage> {
             TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: "Endereço")),
             const Spacer(),
             ElevatedButton.icon(
-              onPressed: _save,
+              onPressed: saving ? null : _save,
               icon: const Icon(Icons.save),
-              label: const Text("Salvar Alterações"),
+              label: Text(saving ? "Salvando..." : "Salvar Alterações"),
             ),
           ],
         ),

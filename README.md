@@ -1,16 +1,65 @@
-# ecolink
+# EcoLink – Aplicativo de Pontos de Descarte Sustentável
 
-A new Flutter project.
+## Descrição do Projeto
+EcoLink é um aplicativo desenvolvido em Flutter que permite aos usuários visualizar locais de descarte de resíduos ao seu redor, utilizando colaboração comunitária para manter os pontos sempre atualizados. O objetivo é facilitar o descarte consciente, promover sustentabilidade e contribuir para a preservação do meio ambiente. Uma solução simples, acessível e com impacto direto na sua cidade.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## Tecnologias e Recursos Utilizados
+- **Flutter** (Dart)
+- **Firebase Authentication**
+- **Firebase Firestore / Realtime Database**
+- **Leaflet Maps** (via Flutter plugin)
+- **REST API própria (Laravel)**
+- **Arquitetura limpa organizada em camadas**
+- **Gerenciamento de estado (Provider)**
+- **Integração com geolocalização**
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Passos para Instalação e Execução
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 1. Clonar o Repositório
+```bash
+git clone https://github.com/askuovye/ecolinkflutter.git
+cd ecolinkflutter
+```
+
+### 2. Instalar Dependências
+```bash
+flutter pub get
+```
+
+### 3. Configurações Adicionais
+- Certifique-se de ter o **Flutter SDK** instalado e configurado.
+- Configure o arquivo `google-services.json` (Android) e `GoogleService-Info.plist` (iOS), caso utilize Firebase.
+- Verifique as permissões de localização no `AndroidManifest.xml` e no `Info.plist`.
+- Conecte sua API Laravel aos endpoints utilizados pelo app.
+
+### 4. Executar o Projeto
+```bash
+flutter run
+```
+
+---
+
+## Usuário de Teste (se aplicável)
+**Email:** test@ecolink.com<br>
+**Senha:** 12345678
+
+---
+
+## Documentação da API
+Este projeto integra diretamente com a API Laravel do EcoLink. A documentação completa da API — incluindo rotas, exemplos de requisição, estrutura de respostas e instruções de integração — foi gerada tomando como base todos os arquivos e arquiteturas fornecidos.
+
+Acesse o arquivo **`DOCUMENTACAO_API.md`** para consultar:
+- Como consumir as rotas da API
+- Exemplos usando `fetch` e Flutter `http`
+- Estrutura das requisições
+- Boas práticas e organização
+
+---
+
+## Repositório Oficial
+[GitHub – EcoLink Flutter](https://github.com/askuovye/ecolinkflutter)
+
