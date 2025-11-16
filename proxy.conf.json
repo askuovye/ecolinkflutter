@@ -1,0 +1,4 @@
+{
+  "proxyType": "PAC",
+  "pacUrl": "http://localhost:8000/proxy.pac"
+}
